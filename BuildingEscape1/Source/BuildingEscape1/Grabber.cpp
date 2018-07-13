@@ -25,9 +25,62 @@ UGrabber::UGrabber()
 void UGrabber::BeginPlay()
 {
 	Super::BeginPlay();
-
-    UE_LOG(LogTemp, Warning, TEXT("Grabber reporting for duty!"));
+    
+    FindPhysicsHandleComponent();
+    
+    SetupInputComponent();
 	
+}
+
+/// Look for attached Physics Handle
+void UGrabber::FindPhysicsHandleComponent()
+{
+    PhysicsHandle = GetOwner() -> FindComponentByClass<UPhysicsHandleComponent>();
+    if (PhysicsHandle)
+    {
+        // Physics handle is found
+        
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("%s missing physics handle component"), *GetOwner() -> GetName());
+    }
+}
+
+/// Look for attached input component (only appears at runtime)
+void UGrabber::SetupInputComponent()
+{
+    InputComponent = GetOwner() -> FindComponentByClass<UInputComponent>();
+    if (InputComponent)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Input component found for %s"), *GetOwner() -> GetName());
+        /// Bind the input axis
+        InputComponent -> BindAction("Grab", IE_Pressed, this, &UGrabber::Grab);
+        InputComponent -> BindAction("Grab", IE_Released, this, &UGrabber::Release);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("%s missing input component"), *GetOwner() -> GetName());
+    };
+}
+
+
+void UGrabber::Grab()
+{
+    UE_LOG(LogTemp, Warning, TEXT("Grab pressed"));
+    
+    // LINE TRACE and see if we reach any actors with physics body collision channal set
+    GetFirstPhysicsBodyInReach();
+    
+    // If we hit something then attach a physics handle
+    // TODO: attach physics handle
+
+}
+
+void UGrabber::Release()
+{
+    UE_LOG(LogTemp, Warning, TEXT("Grab released"));
+    //TODO: release physics handle
 }
 
 
@@ -35,33 +88,25 @@ void UGrabber::BeginPlay()
 void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    
+    // if the physics handle is attached
+        // move the object that we're holding
 
-	// Get the player viewpoint this tick
-    FVector PlayerViewPointLocation;
-    FRotator PlayerViewPointRotation;
+
+}
+
+const FHitResult UGrabber::GetFirstPhysicsBodyInReach()
+{
+    // Get the player viewpoint this tick
+    FVector PlayerViewPointLocation; // Postion
+    FRotator PlayerViewPointRotation; // Direction
     GetWorld() -> GetFirstPlayerController() -> GetPlayerViewPoint(
-        OUT PlayerViewPointLocation,
-        OUT PlayerViewPointRotation
+       OUT PlayerViewPointLocation,
+       OUT PlayerViewPointRotation
     );
-    // Logout to test
-    //    UE_LOG(LogTemp, Warning, TEXT("Player is at Location: %s -- Player is at rotation: %s"),
-    //           *PlayerViewPointLocation.ToString(),
-    //           *PlayerViewPointRotation.ToString()
-    //    );
     
+    // Adds the two components as vectors
     FVector LineTraceEnd = PlayerViewPointLocation + (PlayerViewPointRotation.Vector() * Reach);
-    
-    // Draw a red trace to visualize
-    DrawDebugLine(
-        GetWorld(),
-        PlayerViewPointLocation,
-        LineTraceEnd,
-        FColor(255,0,0),
-        false,
-        0.f,
-        0.f,
-        10.f
-    );
     
     // Setup query parameters
     FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
@@ -69,22 +114,25 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
     // Line-trace(AKA ray-cast) out to reach distance
     FHitResult Hit;
     
-    
     GetWorld() -> LineTraceSingleByObjectType(
-        OUT Hit,
-        PlayerViewPointLocation,
-        LineTraceEnd,
-        FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
-        TraceParameters
+      OUT Hit,
+      PlayerViewPointLocation,
+      LineTraceEnd,
+      FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
+      TraceParameters
     );
-    // See what we hit
     
+    // See what we hit
     AActor* ActorHit = Hit.GetActor();
     if (ActorHit)
     {
         UE_LOG(LogTemp, Warning, TEXT("Line trace hit: %s"), *(ActorHit -> GetName()) );
     }
     
+    return FHitResult();
+    
     
 }
+
+
 
