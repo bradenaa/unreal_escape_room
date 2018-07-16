@@ -29,7 +29,9 @@ public:
 private:
     float Reach = 100.f;
     
+    // Sets a pointer for physics handle component
     UPhysicsHandleComponent* PhysicsHandle = nullptr;
+    // Sets a pointer for InputComponents
     UInputComponent* InputComponent = nullptr;
 
     // Ray-cast and grab what's in reach
@@ -46,5 +48,11 @@ private:
     
     // Return hit for first physics body in reach
     const FHitResult GetFirstPhysicsBodyInReach();
+    
+    // Returns current start of reach line
+    FVector GetReachLineStart();
+    
+    // Returns current end of reach line
+    FVector GetReachLineEnd();
 	
 };
